@@ -1,5 +1,5 @@
 const express = require('express');
-const puppeteer = require('puppeteer');
+const { scrapeFlashscore, scrapeGenericSite } = require('./scraper');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,45 +9,36 @@ app.use(express.json());
 
 // Route principale pour vérifier si le serveur fonctionne
 app.get('/', (req, res) => {
-  res.send('Bienvenue sur le scraper automatisé !');
+  res.send('Serveur de scraping multi-sites opérationnel !');
 });
 
-// Route pour effectuer le scraping
-app.post('/scrape', async (req, res) => {
-  const { url } = req.body;
-
-  // Vérification si l'URL est fournie
-  if (!url) {
-    return res.status(400).json({ error: 'L\'URL est requise dans le corps de la requête.' });
-  }
+// Route pour rechercher un club sur Flashscore
+app.post('/scrape/flashscore', async (req, res) => {
+  const { club } = req.body;
 
   try {
-    // Lancer Puppeteer
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
-
-    const page = await browser.newPage();
-    await page.goto(url, { waitUntil: 'networkidle2' });
-
-    // Exemple : Extraire le titre de la page
-    const title = await page.title();
-
-    // Extraire le contenu HTML
-    const content = await page.content();
-
-    await browser.close();
-
-    // Retourner les données extraites
-    res.json({ title, content });
+    const title = await scrapeFlashscore(club);
+    res.json({ success: true, title });
   } catch (error) {
-    console.error('Erreur lors du scraping :', error);
-    res.status(500).json({ error: 'Une erreur est survenue lors du scraping.' });
+    console.error('Erreur lors de la recherche sur Flashscore :', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Démarrage du serveur
+// Route pour scraper un autre site
+app.post('/scrape/generic', async (req, res) => {
+  const { url } = req.body;
+
+  try {
+    const content = await scrapeGenericSite(url);
+    res.json({ success: true, content });
+  } catch (error) {
+    console.error('Erreur lors du scraping du site générique :', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Lancer le serveur
 app.listen(PORT, () => {
   console.log(`Serveur en cours d'exécution sur le port ${PORT}`);
 });

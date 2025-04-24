@@ -1,85 +1,97 @@
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 
-async function scrapeFlashscoreClub(clubName, tab) {
-  let browser;
+// Définir le chemin vers Google Chrome ou Chromium
+const executablePath =
+  process.env.CHROME_EXECUTABLE ||
+  '/usr/bin/google-chrome-stable'; // Par défaut pour Render ou systèmes Linux
+
+/**
+ * Fonction pour scraper Flashscore
+ * @param {string} club - Le nom du club à rechercher
+ * @returns {Promise<string>} - Le titre de la page du club
+ */
+async function scrapeFlashscore(club) {
+  if (!club) {
+    throw new Error('Le nom du club est requis pour effectuer une recherche.');
+  }
+
+  const browser = await puppeteer.launch({
+    headless: true,
+    executablePath: executablePath,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+      '--single-process',
+      '--no-zygote',
+    ],
+  });
+
   try {
-    console.log(`Recherche pour le club "${clubName}" sur l'onglet "${tab}"`);
-
-    // Lancer le navigateur Chromium
-    browser = await puppeteer.launch({
-      headless: true, // Mode sans interface graphique
-      args: ['--no-sandbox', '--disable-setuid-sandbox'], // Nécessaire pour certains environnements comme Render
-    });
-
     const page = await browser.newPage();
-    await page.goto('https://www.flashscore.fr/', { waitUntil: 'networkidle2' });
+    await page.goto('https://www.flashscore.com/', { waitUntil: 'networkidle2' });
 
-    // Clic sur l'icône de recherche
-    const searchIconSelector = 'svg.search.header__icon--search';
-    const searchInputSelector = 'input.searchInput__input';
-    const searchResultSelector = 'a.searchResult';
+    // Clic sur l'icône de recherche (loupe)
+    await page.waitForSelector('.search__inputButton'); // Sélecteur de la loupe
+    await page.click('.search__inputButton');
 
-    console.log('Clic sur l\'icône de recherche...');
-    await page.click(searchIconSelector);
+    // Entrer le nom du club dans le champ de recherche
+    await page.waitForSelector('.search__input'); // Champ de recherche
+    await page.type('.search__input', club, { delay: 100 });
 
-    console.log('Attente de la barre de recherche...');
-    await page.waitForSelector(searchInputSelector, { visible: true });
+    // Attendre que les résultats de recherche apparaissent
+    await page.waitForSelector('.search__result');
 
-    console.log('Saisie du nom du club...');
-    await page.type(searchInputSelector, clubName);
+    // Cliquer sur le premier résultat correspondant au club
+    const firstResultSelector = '.search__result a';
+    await page.waitForSelector(firstResultSelector);
+    await page.click(firstResultSelector);
 
-    console.log('Attente des résultats de recherche...');
-    await page.waitForSelector(searchResultSelector, { visible: true });
+    // Attendre que la page du club se charge
+    await page.waitForNavigation({ waitUntil: 'networkidle2' });
 
-    // Parcourir les résultats et cliquer sur le premier résultat correspondant
-    console.log('Recherche du club dans les résultats...');
-    const results = await page.$$(searchResultSelector);
-    let found = false;
-    for (const result of results) {
-      const textContent = await page.evaluate(el => el.textContent, result);
-      if (textContent.toLowerCase().includes(clubName.toLowerCase())) {
-        console.log(`✅ Résultat trouvé : ${textContent}`);
-        await result.click();
-        await page.waitForNavigation({ waitUntil: 'networkidle2' });
-        found = true;
-        break;
-      }
-    }
-
-    if (!found) {
-      console.log('❌ Aucun résultat trouvé pour ce club.');
-      return { success: false, error: 'Aucun résultat trouvé pour ce club.' };
-    }
-
-    // Extraire les informations en fonction de l'onglet sélectionné
-    let data = '';
-    switch (tab) {
-      case 'resume':
-        data = await page.evaluate(() => document.querySelector('.teamHeader__name')?.textContent || 'Résumé indisponible.');
-        break;
-      case 'joueurs':
-        data = await page.evaluate(() => document.querySelector('.player-list')?.textContent || 'Liste des joueurs indisponible.');
-        break;
-      case 'matchs':
-        data = await page.evaluate(() => document.querySelector('.matches-list')?.textContent || 'Liste des matchs indisponible.');
-        break;
-      case 'calendrier':
-        data = await page.evaluate(() => document.querySelector('.calendar')?.textContent || 'Calendrier indisponible.');
-        break;
-      default:
-        data = 'Onglet non pris en charge.';
-    }
-
-    console.log(`📋 Données récupérées : ${data}`);
-    return { success: true, data };
-  } catch (err) {
-    console.error("Erreur lors de l'exécution de Puppeteer :", err);
-    return { success: false, error: err.message };
+    // Extraire le titre de la page
+    const title = await page.title();
+    return title;
   } finally {
-    if (browser) {
-      await browser.close();
-    }
+    await browser.close();
   }
 }
 
-module.exports = { scrapeFlashscoreClub };
+/**
+ * Fonction générique pour scraper un autre site
+ * @param {string} url - L'URL du site à scraper
+ * @returns {Promise<string>} - Le contenu de la page
+ */
+async function scrapeGenericSite(url) {
+  if (!url) {
+    throw new Error('Une URL est requise pour scraper.');
+  }
+
+  const browser = await puppeteer.launch({
+    headless: true,
+    executablePath: executablePath,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+      '--single-process',
+      '--no-zygote',
+    ],
+  });
+
+  try {
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: 'networkidle2' });
+
+    // Extraire le contenu de la page
+    const content = await page.content();
+    return content;
+  } finally {
+    await browser.close();
+  }
+}
+
+module.exports = { scrapeFlashscore, scrapeGenericSite };

@@ -1,13 +1,13 @@
 {
   "name": "flashscore-scraper",
   "version": "1.0.0",
-  "description": "Un scraper pour récupérer des données sur Flashscore.",
+  "description": "Serveur Node.js avec Puppeteer-Core pour scraper Flashscore",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "puppeteer": "^21.3.8"
+    "puppeteer-core": "^20.8.1"
   }
 }
