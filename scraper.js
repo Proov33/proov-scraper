@@ -1,11 +1,11 @@
 const { chromium } = require('playwright');
 
-async function scrapeFlashscoreClub(clubName) {
+async function scrapeFlashscoreClub(clubName, tab) {
   let browser;
   try {
-    console.log(`Lancement de la recherche pour le club : ${clubName}`);
+    console.log(`Recherche pour le club "${clubName}" sur l'onglet "${tab}"`);
 
-    // Lancer le navigateur Chromium en mode headless
+    // Lancer le navigateur Chromium
     browser = await chromium.launch({
       headless: true, // Mode sans interface graphique
     });
@@ -29,9 +29,9 @@ async function scrapeFlashscoreClub(clubName) {
     // Attendre que les résultats apparaissent
     await page.waitForSelector(searchResultSelector, { visible: true });
 
-    // Parcourir les résultats et cliquer sur le bon
+    // Cliquer sur le premier résultat correspondant
     const results = await page.$$(searchResultSelector);
-    let found = false; // Indicateur pour vérifier si le club est trouvé
+    let found = false;
     for (const result of results) {
       const textContent = await result.textContent();
       if (textContent.toLowerCase().includes(clubName.toLowerCase())) {
@@ -48,14 +48,27 @@ async function scrapeFlashscoreClub(clubName) {
       return { success: false, error: 'Aucun résultat trouvé pour ce club.' };
     }
 
-    // Récupérer des informations depuis la page du club
-    const clubTitle = await page.title();
-    const clubUrl = page.url();
+    // Récupérer les informations en fonction de l'onglet sélectionné
+    let data = '';
+    switch (tab) {
+      case 'resume':
+        data = await page.textContent('.teamHeader__name'); // Exemple : récupérer le résumé
+        break;
+      case 'joueurs':
+        data = await page.textContent('.player-list'); // Exemple : récupérer les joueurs
+        break;
+      case 'matchs':
+        data = await page.textContent('.matches-list'); // Exemple : récupérer les matchs
+        break;
+      case 'calendrier':
+        data = await page.textContent('.calendar'); // Exemple : récupérer le calendrier
+        break;
+      default:
+        data = 'Onglet non pris en charge.';
+    }
 
-    console.log(`Titre de la page : ${clubTitle}`);
-    console.log(`URL : ${clubUrl}`);
-
-    return { success: true, clubTitle, clubUrl };
+    console.log(`📋 Données récupérées : ${data}`);
+    return { success: true, data };
   } catch (err) {
     console.error("Erreur lors de l'exécution de Playwright :", err);
     return { success: false, error: err.message };
