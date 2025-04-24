@@ -1,55 +1,14 @@
-// server.js
-const express = require("express");
-const cors = require("cors");
-const { scrapeResume, scrapePlayers, scrapeMatches, scrapeFixtures } = require("./scraper");
+const express = require('express');
+const cors = require('cors');
+const scraperRoutes = require('./scraper'); // Assure-toi que le fichier s'appelle bien scraper.js
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000; // Render fournit automatiquement un PORT
 
 app.use(cors());
+app.use(express.json());
+app.use('/', scraperRoutes);
 
-app.get("/resume", async (req, res) => {
-  const team = req.query.team;
-  if (!team) return res.status(400).send("Missing team name");
-  try {
-    const data = await scrapeResume(team);
-    res.send(data);
-  } catch (err) {
-    res.status(500).send("Erreur lors du scraping du résumé.");
-  }
+app.listen(PORT, () => {
+  console.log(`✅ Server is running on port ${PORT}`);
 });
-
-app.get("/players", async (req, res) => {
-  const team = req.query.team;
-  if (!team) return res.status(400).send("Missing team name");
-  try {
-    const data = await scrapePlayers(team);
-    res.send(data);
-  } catch (err) {
-    res.status(500).send("Erreur lors du scraping des joueurs.");
-  }
-});
-
-app.get("/matches", async (req, res) => {
-  const team = req.query.team;
-  if (!team) return res.status(400).send("Missing team name");
-  try {
-    const data = await scrapeMatches(team);
-    res.send(data);
-  } catch (err) {
-    res.status(500).send("Erreur lors du scraping des matchs.");
-  }
-});
-
-app.get("/fixtures", async (req, res) => {
-  const team = req.query.team;
-  if (!team) return res.status(400).send("Missing team name");
-  try {
-    const data = await scrapeFixtures(team);
-    res.send(data);
-  } catch (err) {
-    res.status(500).send("Erreur lors du scraping du calendrier.");
-  }
-});
-
-app.listen(PORT, () => console.log("✅ Serveur lancé sur le port", PORT));
