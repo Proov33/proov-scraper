@@ -1,18 +1,55 @@
-const express = require('express');
+// server.js
+const express = require("express");
+const cors = require("cors");
+const { scrapeResume, scrapePlayers, scrapeMatches, scrapeFixtures } = require("./scraper");
+
 const app = express();
-const scraper = require('./scraper');
+const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
+app.use(cors());
 
-app.get('/api/:type/:team', async (req, res) => {
-  const { type, team } = req.params;
+app.get("/resume", async (req, res) => {
+  const team = req.query.team;
+  if (!team) return res.status(400).send("Missing team name");
   try {
-    const result = await scraper.scrape(type, team);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: 'Erreur serveur', detail: error.message });
+    const data = await scrapeResume(team);
+    res.send(data);
+  } catch (err) {
+    res.status(500).send("Erreur lors du scraping du résumé.");
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log('✅ Serveur lancé sur le port', PORT));
+app.get("/players", async (req, res) => {
+  const team = req.query.team;
+  if (!team) return res.status(400).send("Missing team name");
+  try {
+    const data = await scrapePlayers(team);
+    res.send(data);
+  } catch (err) {
+    res.status(500).send("Erreur lors du scraping des joueurs.");
+  }
+});
+
+app.get("/matches", async (req, res) => {
+  const team = req.query.team;
+  if (!team) return res.status(400).send("Missing team name");
+  try {
+    const data = await scrapeMatches(team);
+    res.send(data);
+  } catch (err) {
+    res.status(500).send("Erreur lors du scraping des matchs.");
+  }
+});
+
+app.get("/fixtures", async (req, res) => {
+  const team = req.query.team;
+  if (!team) return res.status(400).send("Missing team name");
+  try {
+    const data = await scrapeFixtures(team);
+    res.send(data);
+  } catch (err) {
+    res.status(500).send("Erreur lors du scraping du calendrier.");
+  }
+});
+
+app.listen(PORT, () => console.log("✅ Serveur lancé sur le port", PORT));
