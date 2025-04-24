@@ -1,16 +1,13 @@
 {
   "name": "flashscore-scraper",
   "version": "1.0.0",
-  "description": "Scraper pour rechercher des clubs sur Flashscore en utilisant Playwright",
+  "description": "Un scraper pour récupérer des données sur Flashscore.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "build": "bash render-build.sh"
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "playwright": "^1.30.0"
-  },
-  "author": "Proov33",
-  "license": "MIT"
+    "puppeteer": "^21.3.8"
+  }
 }

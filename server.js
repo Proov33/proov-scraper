@@ -19,11 +19,7 @@ app.post('/scrape', async (req, res) => {
 
   try {
     const result = await scrapeFlashscoreClub(clubName, tab);
-    if (result.success) {
-      res.json(result); // Retourne les données récupérées
-    } else {
-      res.status(404).json({ error: result.error });
-    }
+    res.json(result); // Retour des données récupérées
   } catch (err) {
     console.error('Erreur lors du scraping :', err);
     res.status(500).json({ error: 'Une erreur est survenue lors de la recherche.' });
@@ -35,7 +31,7 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route non trouvée.' });
 });
 
-// Lancer le serveur
+// Lancement du serveur
 app.listen(port, () => {
   console.log(`Serveur lancé sur http://localhost:${port}`);
 });
