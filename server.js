@@ -1,22 +1,30 @@
-
-const express = require("express");
-const cors = require("cors");
-const { scrapeData } = require("./scraper");
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const { scrapeData } = require('./scraper');
 
 const app = express();
-app.use(cors());
+const PORT = process.env.PORT || 10000;
 
-app.get("/scrape", async (req, res) => {
-  const { team, tab } = req.query;
-  if (!team || !tab) return res.status(400).json({ error: "Paramètres requis manquants." });
+app.use(cors());
+app.use(bodyParser.json());
+
+app.post('/scrape', async (req, res) => {
+  const { teamName, tab } = req.body;
+
+  if (!teamName || !tab) {
+    return res.status(400).json({ error: 'Missing teamName or tab' });
+  }
 
   try {
-    const result = await scrapeData(team, tab);
-    res.json({ result });
-  } catch (err) {
-    res.status(500).json({ error: "Erreur lors du scraping." });
+    const result = await scrapeData(teamName, tab);
+    res.json({ data: result });
+  } catch (error) {
+    console.error(`Erreur scraping [${tab}] pour "${teamName}" :`, error);
+    res.status(500).json({ error: 'Erreur lors du scraping.' });
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Serveur lancé sur le port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`✅ Server listening on port ${PORT}`);
+});
