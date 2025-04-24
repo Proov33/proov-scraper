@@ -1,18 +1,42 @@
-const axios = require("axios");
-const cheerio = require("cheerio");
+const axios = require('axios');
+const cheerio = require('cheerio');
 
-module.exports = async function getClubData(teamName) {
-  const url = `https://www.google.com/search?q=${encodeURIComponent(teamName)}+club+football`;
-  const { data } = await axios.get(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-    }
-  });
+async function scrape(type, team) {
+  switch (type) {
+    case 'matchs':
+      return await scrapeMatchs(team);
+    case 'joueurs':
+      return await scrapeJoueurs(team);
+    case 'classement':
+      return await scrapeClassement();
+    case 'resume':
+      return await scrapeResume(team);
+    case 'statistiques':
+      return await scrapeStats(team);
+    default:
+      throw new Error('Type non supporté');
+  }
+}
 
-  const $ = cheerio.load(data);
-  const summary = $("div.BNeawe.s3v9rd.AP7Wnd").first().text();
-  return {
-    team: teamName,
-    summary: summary || "Aucune information trouvée."
-  };
-};
+async function scrapeMatchs(team) {
+  // Ex: Flashscore scraping (simulé ici)
+  return [`📅 Match à venir pour ${team}`];
+}
+
+async function scrapeJoueurs(team) {
+  return [`👕 Joueurs principaux de ${team}`];
+}
+
+async function scrapeClassement() {
+  return ['🏆 Classement simulé'];
+}
+
+async function scrapeResume(team) {
+  return [`📰 Résumé du dernier match de ${team}`];
+}
+
+async function scrapeStats(team) {
+  return [`📊 Statistiques de ${team}`];
+}
+
+module.exports = { scrape };
