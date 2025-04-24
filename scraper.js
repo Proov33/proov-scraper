@@ -1,22 +1,19 @@
-const puppeteer = require('puppeteer-core');
+const { chromium } = require('playwright');
 
 async function scrapeFlashscoreClub(clubName) {
   let browser;
   try {
     console.log(`Lancement de la recherche pour le club : ${clubName}`);
 
-    // Spécifiez le chemin vers Chrome ou Chromium
-    const browserPath = '/usr/bin/google-chrome'; // Remplacez ce chemin par celui de votre navigateur Chrome ou Chromium installé
-    browser = await puppeteer.launch({
-      headless: true,
-      executablePath: browserPath, // Utilise un navigateur existant
-      args: ['--no-sandbox', '--disable-setuid-sandbox'], // Options pour Docker ou production
+    // Lancer le navigateur Chromium en mode headless
+    browser = await chromium.launch({
+      headless: true, // Mode sans interface graphique
     });
 
     const page = await browser.newPage();
 
     // Navigation vers Flashscore
-    await page.goto('https://www.flashscore.fr/', { waitUntil: 'networkidle2' });
+    await page.goto('https://www.flashscore.fr/', { waitUntil: 'networkidle' });
 
     // Clic sur l'icône de recherche
     const searchIconSelector = 'svg.search.header__icon--search';
@@ -27,21 +24,28 @@ async function scrapeFlashscoreClub(clubName) {
     await page.waitForSelector(searchInputSelector, { visible: true });
 
     // Saisir le nom du club
-    await page.type(searchInputSelector, clubName);
+    await page.fill(searchInputSelector, clubName);
 
     // Attendre que les résultats apparaissent
     await page.waitForSelector(searchResultSelector, { visible: true });
 
     // Parcourir les résultats et cliquer sur le bon
     const results = await page.$$(searchResultSelector);
+    let found = false; // Indicateur pour vérifier si le club est trouvé
     for (const result of results) {
-      const textContent = await page.evaluate(el => el.textContent.trim(), result);
+      const textContent = await result.textContent();
       if (textContent.toLowerCase().includes(clubName.toLowerCase())) {
         console.log(`✅ Résultat trouvé : ${textContent}`);
         await result.click();
-        await page.waitForNavigation({ waitUntil: 'networkidle2' });
+        await page.waitForNavigation({ waitUntil: 'networkidle' });
+        found = true;
         break;
       }
+    }
+
+    if (!found) {
+      console.log('❌ Aucun résultat trouvé pour ce club.');
+      return { success: false, error: 'Aucun résultat trouvé pour ce club.' };
     }
 
     // Récupérer des informations depuis la page du club
@@ -53,7 +57,7 @@ async function scrapeFlashscoreClub(clubName) {
 
     return { success: true, clubTitle, clubUrl };
   } catch (err) {
-    console.error('Erreur lors de l\'exécution de Puppeteer :', err);
+    console.error("Erreur lors de l'exécution de Playwright :", err);
     return { success: false, error: err.message };
   } finally {
     if (browser) {

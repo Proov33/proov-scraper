@@ -1,5 +1,5 @@
 const express = require('express');
-const { scrapeFlashscoreClub } = require('./scraper'); // Correction du nom du fichier
+const { scrapeFlashscoreClub } = require('./scraper');
 
 const app = express();
 const port = 3000;
@@ -20,7 +20,7 @@ app.post('/search-club', async (req, res) => {
     if (result.success) {
       res.json(result); // Retourne les informations du club à l'application mobile
     } else {
-      res.status(500).json({ error: result.error });
+      res.status(404).json({ error: result.error });
     }
   } catch (err) {
     console.error('Erreur lors de la recherche :', err);
