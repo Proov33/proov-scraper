@@ -1,52 +1,63 @@
+const chromium = require('chrome-aws-lambda');
 const puppeteer = require('puppeteer-core');
-const chromium = require('@sparticuz/chromium');
 
-async function scrapeData(teamName, tab) {
-  const browser = await puppeteer.launch({
-    args: chromium.args,
-    executablePath: await chromium.executablePath(),
-    headless: chromium.headless,
-  });
-  const page = await browser.newPage();
-
-  const query = encodeURIComponent(teamName);
-  const tabToSite = {
-    resume: `https://www.google.com/search?q=${query}+club+football`,
-    joueurs: `https://www.transfermarkt.com/schnellsuche/ergebnis/schnellsuche?query=${query}`,
-    matchs: `https://www.flashscore.fr/recherche/?q=${query}`,
-    calendrier: `https://www.flashscore.fr/recherche/?q=${query}`,
-  };
-
+async function autoScrape(teamName, tab) {
+  let browser = null;
+  let page = null;
   try {
-    await page.goto(tabToSite[tab], { waitUntil: 'domcontentloaded' });
-    let content = '';
+    browser = await puppeteer.launch({
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath,
+      headless: chromium.headless
+    });
 
+    page = await browser.newPage();
+
+    const searchUrl = `https://www.flashscore.fr/recherche/?q=${encodeURIComponent(teamName)}`;
+    await page.goto(searchUrl, { waitUntil: 'networkidle2' });
+
+    await page.waitForSelector('a[href*="/equipe/"]', { timeout: 10000 });
+    const teamUrl = await page.$eval('a[href*="/equipe/"]', el => el.href);
+
+    await page.goto(teamUrl, { waitUntil: 'networkidle2' });
+
+    let result = '';
     switch (tab) {
-      case 'resume':
-        content = await page.title();
-        break;
       case 'joueurs':
-        content = await page.evaluate(() => {
-          const players = [...document.querySelectorAll('.responsive-table .items td:nth-child(2) a')];
-          return players.map(p => p.innerText).join('\n');
+        result = await page.evaluate(() => {
+          const rows = Array.from(document.querySelectorAll('.player-name'));
+          return rows.map(el => el.textContent.trim()).join('\n');
         });
         break;
+
       case 'matchs':
-      case 'calendrier':
-        content = await page.evaluate(() => {
-          return [...document.querySelectorAll('.event__match')].map(e => e.innerText).slice(0, 5).join('\n');
+        result = await page.evaluate(() => {
+          const matchs = Array.from(document.querySelectorAll('.event__match'));
+          return matchs.map(el => el.textContent.trim()).join('\n');
         });
         break;
+
+      case 'calendrier':
+        result = await page.evaluate(() => {
+          const upcoming = Array.from(document.querySelectorAll('.event__match--scheduled'));
+          return upcoming.map(el => el.textContent.trim()).join('\n');
+        });
+        break;
+
+      case 'resume':
       default:
-        content = '❌ Onglet inconnu';
+        result = `✅ Infos trouvées pour ${teamName}.\nURL: ${teamUrl}`;
+        break;
     }
 
-    await browser.close();
-    return content || '⚠️ Aucune donnée trouvée.';
-  } catch (error) {
-    await browser.close();
-    throw error;
+    return result || "❌ Aucune donnée trouvée.";
+  } catch (err) {
+    console.error("Scraping error:", err);
+    return "❌ Erreur lors du scraping.";
+  } finally {
+    if (browser) await browser.close();
   }
 }
 
-module.exports = { scrapeData };
+module.exports = autoScrape;
