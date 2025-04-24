@@ -21,14 +21,10 @@ app.use(limiter);
 app.post('/scrape', async (req, res) => {
   const { teamName, tab } = req.body;
 
-  if (!teamName || !tab) {
-    return res.status(400).json({ error: 'Missing teamName or tab' });
-  }
+  console.log("Requête reçue :", req.body);
 
-  // Valide les données utilisateur
-  const validTabs = ['joueurs', 'matchs', 'calendrier', 'resume'];
-  if (!validTabs.includes(tab)) {
-    return res.status(400).json({ error: 'Invalid tab specified' });
+  if (!teamName || !tab) {
+    return res.status(400).json({ error: 'Paramètres manquants : teamName ou tab' });
   }
 
   try {
@@ -41,5 +37,5 @@ app.post('/scrape', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`✅ Server listening on port ${PORT}`);
+  console.log(`✅ Serveur opérationnel sur le port ${PORT}`);
 });
