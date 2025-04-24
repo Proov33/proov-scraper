@@ -1,66 +1,29 @@
-const puppeteer = require('puppeteer');
 
-async function searchTeamUrl(teamName) {
-  const browser = await puppeteer.launch({ headless: 'new' });
-  const page = await browser.newPage();
+const puppeteer = require("puppeteer-core");
 
-  await page.goto('https://www.flashscore.fr/', { waitUntil: 'domcontentloaded' });
-  await page.type('input[type="search"]', teamName);
-  await page.waitForTimeout(2000);
-
-  const link = await page.evaluate(() => {
-    const anchor = document.querySelector('a[href*="/equipe/"]');
-    return anchor ? anchor.href : null;
+async function scrapeData(team, tab) {
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    executablePath: process.env.CHROME_BIN || '/usr/bin/chromium-browser'
   });
+  const page = await browser.newPage();
+  let url = "";
 
+  if (tab === 'resume') {
+    url = `https://www.flashscore.fr/recherche/?q=${encodeURIComponent(team)}`;
+  } else if (tab === 'joueurs') {
+    url = `https://www.transfermarkt.fr/schnellsuche/ergebnis/schnellsuche?query=${encodeURIComponent(team)}`;
+  } else if (tab === 'matchs' || tab === 'calendrier') {
+    url = `https://www.sofascore.com/fr/search/${encodeURIComponent(team)}`;
+  }
+
+  await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
+
+  const content = await page.content();
   await browser.close();
-  return link;
+
+  return content.slice(0, 500);  // pour test
 }
 
-async function getMatches(req, res) {
-  try {
-    const { team } = req.params;
-    const teamUrl = await searchTeamUrl(team);
-    if (!teamUrl) return res.status(404).json({ error: 'Équipe introuvable.' });
-
-    // logique de scraping des matchs ici
-    return res.json({ message: `Matchs pour ${team}` });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erreur lors du scraping des matchs' });
-  }
-}
-
-async function getPlayers(req, res) {
-  try {
-    const { team } = req.params;
-    const teamUrl = await searchTeamUrl(team);
-    if (!teamUrl) return res.status(404).json({ error: 'Équipe introuvable.' });
-
-    // logique de scraping des joueurs ici
-    return res.json({ message: `Joueurs pour ${team}` });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erreur lors du scraping des joueurs' });
-  }
-}
-
-async function getSummary(req, res) {
-  res.json({ message: "Résumé non encore implémenté." });
-}
-
-async function getStats(req, res) {
-  res.json({ message: "Statistiques non encore implémentées." });
-}
-
-async function getRanking(req, res) {
-  res.json({ message: "Classement non encore implémenté." });
-}
-
-module.exports = {
-  getMatches,
-  getPlayers,
-  getSummary,
-  getStats,
-  getRanking,
-};
+module.exports = { scrapeData };

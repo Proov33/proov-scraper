@@ -1,22 +1,22 @@
-const express = require('express');
-const cors = require('cors');
-const scraper = require('./scraper');
+
+const express = require("express");
+const cors = require("cors");
+const { scrapeData } = require("./scraper");
 
 const app = express();
-const PORT = process.env.PORT || 10000;
-
 app.use(cors());
 
-app.get('/', (req, res) => {
-  res.send('✅ Scraper backend is running');
+app.get("/scrape", async (req, res) => {
+  const { team, tab } = req.query;
+  if (!team || !tab) return res.status(400).json({ error: "Paramètres requis manquants." });
+
+  try {
+    const result = await scrapeData(team, tab);
+    res.json({ result });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur lors du scraping." });
+  }
 });
 
-app.get('/matches/:team', scraper.getMatches);
-app.get('/players/:team', scraper.getPlayers);
-app.get('/summary/:team', scraper.getSummary);
-app.get('/stats/:team', scraper.getStats);
-app.get('/ranking/:team', scraper.getRanking);
-
-app.listen(PORT, () => {
-  console.log(`✅ Server running on http://localhost:${PORT}`);
-});
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Serveur lancé sur le port ${PORT}`));
