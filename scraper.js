@@ -6,7 +6,7 @@ async function scrapeFlashscoreClub(clubName) {
     console.log(`Lancement de la recherche pour le club : ${clubName}`);
 
     // Spécifiez le chemin vers Chrome ou Chromium
-    const browserPath = '/path/to/chrome'; // Remplacez par le chemin vers votre navigateur
+    const browserPath = '/usr/bin/google-chrome'; // Remplacez ce chemin par celui de votre navigateur Chrome ou Chromium installé
     browser = await puppeteer.launch({
       headless: true,
       executablePath: browserPath, // Utilise un navigateur existant
