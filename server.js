@@ -1,5 +1,5 @@
 const express = require('express');
-const { scrapeFlashscoreClub } = require('/scrapper');
+const { scrapeFlashscoreClub } = require('./scraper'); // Correction du nom du fichier
 
 const app = express();
 const port = 3000;
