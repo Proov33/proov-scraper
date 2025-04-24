@@ -1,86 +1,66 @@
+
+const express = require('express');
 const axios = require('axios');
 const cheerio = require('cheerio');
+const cors = require('cors');
 
-async function scrapeResume(team) {
-  return `Résumé de l'équipe ${team} non disponible pour le moment.`;
-}
+const app = express();
+app.use(cors());
 
-async function scrapePlayers(team) {
+// Fonction pour trouver dynamiquement l'URL d'une équipe sur Flashscore
+async function findTeamUrl(teamName) {
   try {
-    const url = `https://www.flashscore.fr/equipe/${team.toLowerCase().replace(/\s+/g, '-')}/alignement/`;
-    const { data } = await axios.get(url);
-    const $ = cheerio.load(data);
-    const players = [];
-
-    $('.event__participant--home').each((i, el) => {
-      players.push($(el).text().trim());
+    const searchUrl = `https://www.flashscore.fr/recherche/?q=${encodeURIComponent(teamName)}`;
+    const { data } = await axios.get(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0'
+      }
     });
 
-    if (players.length === 0) {
-      return 'Aucun joueur trouvé ou format de page modifié.';
+    const $ = cheerio.load(data);
+    const teamLink = $("a[href*='/equipe/']").first().attr('href');
+    if (teamLink) {
+      return `https://www.flashscore.fr${teamLink}`;
+    } else {
+      return null;
     }
-
-    return players.map(p => `- ${p}`).join('\n');
   } catch (error) {
-    return 'Erreur lors du scraping des joueurs.';
+    console.error("Erreur lors de la recherche d'équipe :", error.message);
+    return null;
   }
 }
 
-async function scrapeMatches(team) {
+// Exemple d'utilisation : récupération des 5 derniers matchs
+app.get('/matches/:team', async (req, res) => {
+  const team = req.params.team;
+  const teamUrl = await findTeamUrl(team);
+  if (!teamUrl) return res.status(404).json({ error: 'Équipe introuvable.' });
+
   try {
-    const url = `https://www.flashscore.fr/equipe/${team.toLowerCase().replace(/\s+/g, '-')}/resultats/`;
-    const { data } = await axios.get(url);
+    const { data } = await axios.get(teamUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0' }
+    });
     const $ = cheerio.load(data);
     const matches = [];
 
-    $('.event__match').each((i, el) => {
-      const home = $(el).find('.event__participant--home').text().trim();
-      const away = $(el).find('.event__participant--away').text().trim();
-      const score = $(el).find('.event__score--ft').text().trim();
-      if (home && away && score) {
-        matches.push(`${home} ${score} ${away}`);
-      }
+    $('div.event__match').slice(0, 5).each((i, el) => {
+      const home = $(el).find('.event__participant--home').text();
+      const away = $(el).find('.event__participant--away').text();
+      const score = $(el).find('.event__scores span').text();
+      matches.push({ home, away, score });
     });
 
-    if (matches.length === 0) {
-      return 'Aucun match trouvé.';
-    }
-
-    return matches.slice(0, 5).join('\n');
+    res.json(matches);
   } catch (error) {
-    return 'Erreur lors du scraping des matchs.';
+    res.status(500).json({ error: 'Erreur lors du scraping.' });
   }
-}
+});
 
-async function scrapeFixtures(team) {
-  try {
-    const url = `https://www.flashscore.fr/equipe/${team.toLowerCase().replace(/\s+/g, '-')}/programme/`;
-    const { data } = await axios.get(url);
-    const $ = cheerio.load(data);
-    const fixtures = [];
+app.get('/', (req, res) => {
+  res.send('Scraper Flashscore opérationnel.');
+});
 
-    $('.event__match').each((i, el) => {
-      const home = $(el).find('.event__participant--home').text().trim();
-      const away = $(el).find('.event__participant--away').text().trim();
-      const time = $(el).find('.event__time').text().trim();
-      if (home && away && time) {
-        fixtures.push(`${home} vs ${away} à ${time}`);
-      }
-    });
-
-    if (fixtures.length === 0) {
-      return 'Aucune rencontre à venir trouvée.';
-    }
-
-    return fixtures.slice(0, 5).join('\n');
-  } catch (error) {
-    return 'Erreur lors du scraping du calendrier.';
-  }
-}
-
-module.exports = {
-  scrapeResume,
-  scrapePlayers,
-  scrapeMatches,
-  scrapeFixtures,
-};
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Serveur lancé sur le port ${PORT}`);
+});
