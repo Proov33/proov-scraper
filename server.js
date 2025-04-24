@@ -1,17 +1,18 @@
-const express = require("express");
+const express = require('express');
 const app = express();
-const scraper = require("./scraper");
+const scraper = require('./scraper');
 
-app.get("/club/:team", async (req, res) => {
+app.use(express.json());
+
+app.get('/api/:type/:team', async (req, res) => {
+  const { type, team } = req.params;
   try {
-    const data = await scraper(req.params.team);
-    res.json({ success: true, data });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    const result = await scraper.scrape(type, team);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur serveur', detail: error.message });
   }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log('✅ Serveur lancé sur le port', PORT));
