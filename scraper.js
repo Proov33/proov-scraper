@@ -6,13 +6,9 @@ async function scrapeFlashscoreClub(clubName, tab) {
     console.log(`Recherche pour le club "${clubName}" sur l'onglet "${tab}"`);
 
     // Lancer le navigateur Chromium
-    browser = await chromium.launch({
-      headless: true, // Mode sans interface graphique
-    });
+    browser = await chromium.launch({ headless: true });
 
     const page = await browser.newPage();
-
-    // Navigation vers Flashscore
     await page.goto('https://www.flashscore.fr/', { waitUntil: 'networkidle' });
 
     // Clic sur l'icône de recherche
@@ -22,8 +18,6 @@ async function scrapeFlashscoreClub(clubName, tab) {
 
     await page.click(searchIconSelector);
     await page.waitForSelector(searchInputSelector, { visible: true });
-
-    // Saisir le nom du club
     await page.fill(searchInputSelector, clubName);
 
     // Attendre que les résultats apparaissent
@@ -48,20 +42,20 @@ async function scrapeFlashscoreClub(clubName, tab) {
       return { success: false, error: 'Aucun résultat trouvé pour ce club.' };
     }
 
-    // Récupérer les informations en fonction de l'onglet sélectionné
+    // Récupérer les informations en fonction de l'onglet
     let data = '';
     switch (tab) {
       case 'resume':
-        data = await page.textContent('.teamHeader__name'); // Exemple : récupérer le résumé
+        data = await page.textContent('.teamHeader__name');
         break;
       case 'joueurs':
-        data = await page.textContent('.player-list'); // Exemple : récupérer les joueurs
+        data = await page.textContent('.player-list');
         break;
       case 'matchs':
-        data = await page.textContent('.matches-list'); // Exemple : récupérer les matchs
+        data = await page.textContent('.matches-list');
         break;
       case 'calendrier':
-        data = await page.textContent('.calendar'); // Exemple : récupérer le calendrier
+        data = await page.textContent('.calendar');
         break;
       default:
         data = 'Onglet non pris en charge.';
