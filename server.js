@@ -21,10 +21,11 @@ app.use(limiter);
 app.post('/scrape', async (req, res) => {
   const { teamName, tab } = req.body;
 
-  console.log("Requête reçue :", req.body);
+  console.log("Requête reçue :", req.body); // Log de la requête reçue
 
   if (!teamName || !tab) {
-    return res.status(400).json({ error: 'Paramètres manquants : teamName ou tab' });
+    console.error("Paramètres manquants : teamName ou tab");
+    return res.status(400).json({ error: 'Missing teamName or tab' });
   }
 
   try {

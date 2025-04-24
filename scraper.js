@@ -27,6 +27,7 @@ async function autoScrape(teamName, tab) {
 
     // Étape 1 : Rechercher l'équipe sur Flashscore
     const searchUrl = `https://www.flashscore.fr/recherche/?q=${encodeURIComponent(teamName)}`;
+    console.log(`🔍 Recherche pour l'équipe : ${teamName}`);
     await page.goto(searchUrl, { waitUntil: 'networkidle2' });
 
     // Vérifier si une équipe correspondante est trouvée
@@ -38,10 +39,12 @@ async function autoScrape(teamName, tab) {
 
     // Étape 2 : Extraire l'URL de l'équipe
     const teamUrl = await page.$eval(teamLinkSelector, el => el.href);
+    console.log(`🌐 URL de l'équipe : ${teamUrl}`);
     await page.goto(teamUrl, { waitUntil: 'networkidle2' });
 
     // Étape 3 : Scraping en fonction de l'onglet
     let result = '';
+    console.log(`📄 Scraping de l'onglet : ${tab}`);
     switch (tab) {
       case 'joueurs': // Effectif des joueurs
         result = await page.evaluate(() => {
@@ -74,7 +77,7 @@ async function autoScrape(teamName, tab) {
     cache.set(cacheKey, result);
     return result;
   } catch (err) {
-    console.error("Erreur lors du scraping :", err);
+    console.error("Erreur de scraping :", err);
     return "❌ Une erreur s'est produite lors du scraping.";
   } finally {
     if (browser) await browser.close();
