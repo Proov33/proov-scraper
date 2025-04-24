@@ -1,5 +1,5 @@
 const express = require('express');
-const { scrapeFlashscoreClub } = require('./scrapper');
+const { scrapeFlashscoreClub } = require('/scrapper');
 
 const app = express();
 const port = 3000;
