@@ -1,6 +1,6 @@
 {
   "name": "proov-scraper",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Scraper multi-source pour application sportive",
   "main": "server.js",
   "scripts": {
@@ -10,7 +10,9 @@
     "chrome-aws-lambda": "10.1.0",
     "express": "^4.18.2",
     "puppeteer-core": "10.1.0",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "node-cache": "^5.1.2",
+    "express-rate-limit": "^6.7.0"
   },
   "engines": {
     "node": "16.x"

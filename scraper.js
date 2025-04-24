@@ -1,7 +1,19 @@
 const chromium = require('chrome-aws-lambda');
 const puppeteer = require('puppeteer-core');
+const NodeCache = require('node-cache');
+
+const cache = new NodeCache({ stdTTL: 3600 }); // Cache avec une durée de vie de 1 heure
 
 async function autoScrape(teamName, tab) {
+  const cacheKey = `${teamName}-${tab}`;
+  
+  // Vérifie si les données sont déjà en cache
+  const cachedData = cache.get(cacheKey);
+  if (cachedData) {
+    console.log(`✅ Données récupérées depuis le cache pour ${teamName}, onglet ${tab}`);
+    return cachedData;
+  }
+
   let browser = null;
   let page = null;
   try {
@@ -51,6 +63,8 @@ async function autoScrape(teamName, tab) {
         break;
     }
 
+    // Met les données en cache
+    cache.set(cacheKey, result);
     return result || "❌ Aucune donnée trouvée.";
   } catch (err) {
     console.error("Scraping error:", err);
