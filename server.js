@@ -1,97 +1,57 @@
 const express = require('express');
 const puppeteer = require('puppeteer-core');
-const bodyParser = require('body-parser');
-const cors = require('cors');
+const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-const CHROME_EXECUTABLE = process.env.CHROME_EXECUTABLE || '/usr/bin/google-chrome-stable';
+const PORT = process.env.PORT || 10000;
 
-// Middleware
-app.use(cors());
-app.use(bodyParser.json());
+// Middleware pour analyser les requêtes JSON
+app.use(express.json());
 
-// Helper function to launch Puppeteer
-async function launchBrowser() {
-  return puppeteer.launch({
-    headless: true,
-    executablePath: CHROME_EXECUTABLE,
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-gpu',
-      '--single-process',
-      '--no-zygote',
-    ],
-  });
-}
+// Chemin vers l'exécutable Chromium local
+const executablePath = path.resolve(__dirname, 'chrome-bin/chrome.exe');
 
-// Endpoint to scrape data for specific sections (e.g., calendrier, live)
+// Route principale pour le scraping
 app.post('/scrape', async (req, res) => {
   const { team, section } = req.body;
 
+  // Vérification des paramètres
   if (!team || !section) {
-    return res.status(400).json({ success: false, error: 'Team name and section are required.' });
+    return res.status(400).json({ success: false, error: 'Missing team or section' });
   }
 
   try {
-    const browser = await launchBrowser();
+    console.log(`🚀 Lancement du scraping pour team=${team}, section=${section}`);
+
+    // Lancement de Puppeteer avec Chromium local
+    const browser = await puppeteer.launch({
+      headless: true, // Exécuter sans interface graphique
+      executablePath, // Chemin vers Chromium local
+      args: ['--no-sandbox', '--disable-setuid-sandbox'], // Arguments nécessaires pour Render ou environnements cloud
+    });
+
     const page = await browser.newPage();
+    console.log('🌐 Navigation vers le site...');
+    await page.goto('https://www.example.com', { waitUntil: 'networkidle2' });
 
-    // URL configuration for scraping based on section
-    const urlMap = {
-      calendrier: `https://www.flashscore.com/team/${team}/fixtures/`,
-      live: `https://www.flashscore.com/live/`,
-      joueurs: `https://www.flashscore.com/team/${team}/squad/`,
-      resume: `https://www.flashscore.com/team/${team}/overview/`,
-      paris: `https://www.flashscore.com/team/${team}/betting/`,
-    };
-
-    const url = urlMap[section];
-    if (!url) {
-      await browser.close();
-      return res.status(400).json({ success: false, error: 'Invalid section provided.' });
-    }
-
-    await page.goto(url, { waitUntil: 'networkidle2' });
-
-    // Scraping logic
-    let data;
-    if (section === 'calendrier') {
-      data = await page.evaluate(() => {
-        return Array.from(document.querySelectorAll('.event__match')).map(match => ({
-          date: match.querySelector('.event__time').textContent.trim(),
-          homeTeam: match.querySelector('.event__participant--home').textContent.trim(),
-          awayTeam: match.querySelector('.event__participant--away').textContent.trim(),
-          score: match.querySelector('.event__scores')?.textContent.trim() || 'À venir',
-        }));
-      });
-    } else if (section === 'live') {
-      data = await page.evaluate(() => {
-        return Array.from(document.querySelectorAll('.event__match')).map(match => ({
-          homeTeam: match.querySelector('.event__participant--home').textContent.trim(),
-          awayTeam: match.querySelector('.event__participant--away').textContent.trim(),
-          score: match.querySelector('.event__scores')?.textContent.trim() || 'N/A',
-          time: match.querySelector('.event__stage--time')?.textContent.trim() || '',
-        }));
-      });
-    } else {
-      // General scraping for other sections
-      data = await page.content();
-    }
+    console.log('🔍 Extraction des données...');
+    // Exemple de scraping simple
+    const data = await page.evaluate(() => {
+      return document.title; // Récupère le titre de la page
+    });
 
     await browser.close();
+    console.log('✅ Scraping terminé avec succès.');
 
-    // Respond with scraped data
-    return res.json({ success: true, data });
+    // Retour des données scrappées
+    res.json({ success: true, data });
   } catch (error) {
-    console.error('Scraping error:', error);
-    return res.status(500).json({ success: false, error: 'Scraping failed. Please try again.' });
+    console.error('❌ Une erreur est survenue :', error.message);
+    res.status(500).json({ success: false, error: 'Scraping failed. Please try again.' });
   }
 });
 
-// Start server
+// Lancer le serveur
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`🚀 Serveur en cours d'exécution sur le port ${PORT}`);
 });
