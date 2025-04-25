@@ -1,22 +1,21 @@
 #!/usr/bin/env bash
 
-# Mettre à jour les paquets et installer les dépendances nécessaires
+# Installer les dépendances nécessaires pour Chromium
 apt-get update && apt-get install -y \
   libnss3 \
+  libxss1 \
+  libasound2 \
   libatk1.0-0 \
   libatk-bridge2.0-0 \
   libcups2 \
-  libxcomposite1 \
-  libxrandr2 \
-  libxdamage1 \
+  libdrm2 \
   libgbm1 \
-  libasound2 \
+  libgtk-3-0 \
+  libnspr4 \
+  libxcomposite1 \
   fonts-liberation \
   libappindicator3-1 \
-  libxshmfence1 \
-  libpangocairo-1.0-0 \
-  libx11-xcb1 \
-  libxshmfence-dev
-
-# Installer les dépendances pour Puppeteer
-npm install
+  xdg-utils
+npm intall
+# Copier Chromium local dans le dossier de build
+cp -r chrome-bin $RENDER_ROOT/
