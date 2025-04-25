@@ -16,6 +16,6 @@ apt-get update && apt-get install -y \
   fonts-liberation \
   libappindicator3-1 \
   xdg-utils
-npm intall
+npm install
 # Copier Chromium local dans le dossier de build
 cp -r chrome-bin $RENDER_ROOT/
