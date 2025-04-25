@@ -27,7 +27,7 @@ app.post('/', async (req, res) => {
     const browser = await puppeteer.launch({
       headless: true, // Mode sans interface graphique
       executablePath, // Chemin vers Chromium
-      args: ['--no-sandbox', '--disable-setuid-sandbox'], // Arguments nécessaires pour Render ou environnements cloud
+      args: ['--no-sandbox', '--disable-setuid-sandbox'], // Arguments nécessaires pour Render
     });
 
     const page = await browser.newPage();
@@ -57,7 +57,7 @@ app.post('/', async (req, res) => {
   } catch (error) {
     console.error('❌ Une erreur est survenue :', error.message);
 
-    res.status(500).json({ success: false, error: 'Scraping failed. Please try again.' });
+    res.status(500).json({ success: false, error: `Scraping failed: ${error.message}` });
   }
 });
 
